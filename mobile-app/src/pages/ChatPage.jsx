@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Send, User, Package, QrCode } from "lucide-react";
+import { Send, User, Package, QrCode, Sparkles, ShoppingBag } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import toast from "react-hot-toast";
 import { mockEmit } from "../services/socket";
 import ProductCard from "../components/ProductCard";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function ChatPage() {
   const navigate = useNavigate();
@@ -94,121 +97,177 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-between px-4 z-10 shadow-md">
-        <h1 className="text-lg font-semibold text-white">Nexus Agent</h1>
-        <div className="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center">
-          <User className="w-5 h-5 text-white" />
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      {/* Modern Header */}
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 flex items-center justify-between px-4 z-50 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+            <Sparkles className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-slate-900">NEXUS</h1>
+            <p className="text-xs text-slate-500">AI Shopping Assistant</p>
+          </div>
         </div>
+        
+        <Avatar>
+          <AvatarFallback className="bg-gradient-to-br from-blue-100 to-purple-100">
+            <User className="w-5 h-5 text-blue-600" />
+          </AvatarFallback>
+        </Avatar>
       </header>
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-3 sm:px-4 py-4 space-y-3 bg-[#F9FAFB] mt-16 pb-20">
-        {messages.length === 0 && !isTyping && (
-          <div className="flex flex-col items-center justify-center h-full -mt-16">
-            <Package className="w-16 h-16 text-blue-500 opacity-50 mb-4" />
-            <p className="text-gray-500 text-center">
-              Start by telling me what you're looking for...
-            </p>
-          </div>
-        )}
-
-        {messages.map((msg) => (
-          <div
-            key={msg.id}
-            className={`flex ${
-              msg.role === "user" ? "justify-end" : "justify-start"
-            }`}
-          >
-            <div
-              className={`max-w-[85%] sm:max-w-[70%] ${
-                msg.role === "user" ? "items-end" : "items-start"
-              } flex flex-col`}
+      {/* Messages Area with improved design */}
+      <ScrollArea className="flex-1 mt-16 mb-20">
+        <div className="px-4 py-6 space-y-4 max-w-4xl mx-auto">
+          {messages.length === 0 && !isTyping && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex flex-col items-center justify-center h-[calc(100vh-16rem)] text-center"
             >
-              <div
-                className={`px-4 py-2 rounded-2xl shadow-sm text-sm ${
-                  msg.role === "user"
-                    ? "bg-blue-500 text-white rounded-l-2xl rounded-tr-2xl"
-                    : "bg-white text-gray-800 rounded-r-2xl rounded-tl-2xl"
-                }`}
-              >
-                {msg.text}
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-500/20 to-purple-600/20 flex items-center justify-center mb-6">
+                <ShoppingBag className="w-10 h-10 text-blue-600" />
               </div>
-              <span className="text-[10px] text-gray-400 mt-1 px-1">
-                {formatTime(msg.timestamp)}
-              </span>
+              <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome to NEXUS</h2>
+              <p className="text-slate-600 max-w-md">
+                Your AI-powered shopping assistant. Tell me what you're looking for and I'll help you find the perfect products.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 justify-center">
+                {["Wedding dress", "Casual outfit", "Formal wear"].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => setInputText(suggestion)}
+                    className="px-4 py-2 rounded-full bg-white border border-slate-200 text-sm text-slate-700 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-              {/* Product Recommendations */}
-              {msg.recommendations && msg.recommendations.length > 0 && (
-                <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 pt-1 mt-2 w-full scrollbar-hide -mx-2 px-2">
-                  {msg.recommendations.map((product) => (
-                    <ProductCard key={product.productId} product={product} />
+          <AnimatePresence>
+            {messages.map((msg, index) => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: index * 0.05 }}
+                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[85%] sm:max-w-[70%] ${
+                    msg.role === "user" ? "items-end" : "items-start"
+                  } flex flex-col gap-1`}
+                >
+                  <div
+                    className={`px-4 py-3 rounded-2xl shadow-sm ${
+                      msg.role === "user"
+                        ? "bg-gradient-to-br from-blue-500 to-blue-600 text-white"
+                        : "bg-white border border-slate-200 text-slate-800"
+                    }`}
+                  >
+                    <p className="text-sm leading-relaxed">{msg.text}</p>
+                  </div>
+                  <span className="text-xs text-slate-400 px-2">
+                    {formatTime(msg.timestamp)}
+                  </span>
+
+                  {/* Product Recommendations with improved cards */}
+                  {msg.recommendations && msg.recommendations.length > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="flex gap-3 overflow-x-auto pb-2 pt-2 w-full scrollbar-hide -mx-2 px-2"
+                    >
+                      {msg.recommendations.map((product) => (
+                        <ProductCard key={product.productId} product={product} />
+                      ))}
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Typing Indicator with animation */}
+          {isTyping && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex justify-start"
+            >
+              <div className="bg-white border border-slate-200 rounded-2xl px-4 py-3 shadow-sm inline-flex items-center gap-2">
+                <div className="flex gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <motion.span
+                      key={i}
+                      className="w-2 h-2 bg-blue-500 rounded-full"
+                      animate={{
+                        y: [-2, 2, -2],
+                        opacity: [0.5, 1, 0.5],
+                      }}
+                      transition={{
+                        duration: 0.6,
+                        repeat: Infinity,
+                        delay: i * 0.1,
+                      }}
+                    />
                   ))}
                 </div>
-              )}
-            </div>
-          </div>
-        ))}
+                <span className="text-xs text-slate-500">AI is thinking...</span>
+              </div>
+            </motion.div>
+          )}
 
-        {/* Typing Indicator */}
-        {isTyping && (
-          <div className="flex justify-start">
-            <div className="bg-white rounded-2xl px-3 py-2 shadow-sm inline-flex items-center gap-1">
-              <span className="flex gap-1">
-                <span
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0ms" }}
-                ></span>
-                <span
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "150ms" }}
-                ></span>
-                <span
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "300ms" }}
-                ></span>
-              </span>
-            </div>
-          </div>
+          <div ref={messagesEndRef} />
+        </div>
+      </ScrollArea>
+
+      {/* FAB - Transfer to Store with improved design */}
+      <AnimatePresence>
+        {messages.length >= 3 && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 20 }}
+            className="fixed bottom-24 right-4 z-30"
+          >
+            <Button
+              onClick={handleGenerateQR}
+              className="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 rounded-full px-5 py-6 shadow-xl flex items-center gap-2 text-white font-semibold"
+            >
+              <QrCode className="w-5 h-5" />
+              <span>Transfer to Store</span>
+            </Button>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* FAB - Transfer to Store */}
-      {messages.length >= 3 && (
-        <motion.button
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3 }}
-          onClick={handleGenerateQR}
-          className="fixed bottom-20 right-3 sm:right-4 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full px-3 sm:px-4 py-2.5 sm:py-3 shadow-lg flex items-center gap-1.5 sm:gap-2 text-white text-xs sm:text-sm font-semibold z-20 hover:shadow-xl transition-all duration-300"
-        >
-          <QrCode className="w-4 h-4 sm:w-5 sm:h-5" />
-          <span className="hidden sm:inline">Transfer to Store</span>
-          <span className="sm:hidden">Transfer</span>
-        </motion.button>
-      )}
-
-      {/* Input Area */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-3 pb-safe">
-        <input
-          type="text"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="What are you looking for?"
-          disabled={isTyping}
-          className="flex-1 bg-gray-100 rounded-full px-3 sm:px-4 py-2 sm:py-2.5 text-sm sm:text-base focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-        />
-        <button
-          onClick={handleSend}
-          disabled={!inputText.trim() || isTyping}
-          className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-blue-500 flex items-center justify-center text-white shadow hover:bg-blue-600 active:scale-95 transition disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-        >
-          <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-        </button>
+      {/* Input Area with modern design */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-lg border-t border-slate-200/60 px-4 py-3 z-40">
+        <div className="max-w-4xl mx-auto flex items-center gap-3">
+          <input
+            type="text"
+            value={inputText}
+            onChange={(e) => setInputText(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder="Describe what you're looking for..."
+            disabled={isTyping}
+            className="flex-1 px-4 py-3 rounded-full bg-slate-100 border-2 border-transparent focus:border-blue-500 focus:bg-white transition-all outline-none text-sm placeholder-slate-400 disabled:opacity-50"
+          />
+          <Button
+            onClick={handleSend}
+            disabled={!inputText.trim() || isTyping}
+            size="icon"
+            className="rounded-full w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 shadow-lg disabled:opacity-50"
+          >
+            <Send className="w-5 h-5" />
+          </Button>
+        </div>
       </div>
     </div>
   );

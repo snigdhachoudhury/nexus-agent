@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from "react";
-import { Bell, RotateCcw, MapPin } from "lucide-react";
+import { Bell, RotateCcw, MapPin, Sparkles, ShoppingBag, Tag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import ProductCard from "../components/ProductCard";
 import { mockSession } from "../services/api";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function ActiveMode({ session = mockSession, onStartOver }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -109,83 +112,141 @@ export default function ActiveMode({ session = mockSession, onStartOver }) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="w-screen h-screen bg-[#F9FAFB] flex flex-col"
+      className="min-h-screen h-screen overflow-y-auto bg-gradient-to-br from-slate-50 via-white to-slate-100"
     >
-      {/* Header */}
-      <div className="min-h-24 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 px-4 sm:px-6 lg:px-10 py-4">
-        <div className="flex-1 lg:mr-6">
-          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl px-4 sm:px-6 lg:px-8 py-3 sm:py-4 shadow-lg">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold">
-              Welcome back!
-            </h1>
-            <p className="text-sm sm:text-base lg:text-lg text-white/90">
-              We've picked these just for your occasion.
-            </p>
+      {/* Modern Header with branding */}
+      <div className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center shadow-lg">
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-slate-900">NEXUS</h1>
+                <p className="text-sm text-slate-500">AI Shopping Assistant</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={handleStartOver}
+                className="gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Start Over
+              </Button>
+              <Button 
+                size="lg"
+                onClick={handleCallAssociate}
+                className="bg-green-600 hover:bg-green-700 gap-2"
+              >
+                <Bell className="w-4 h-4" />
+                Call Associate
+              </Button>
+            </div>
           </div>
         </div>
-        <div className="w-full lg:w-[400px] bg-white rounded-xl shadow-lg p-4 sm:p-6 flex flex-col gap-3">
-          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-1">
-            Session Summary
-          </h2>
-          <div className="space-y-1 text-sm sm:text-base lg:text-lg text-gray-700">
-            <p>
-              Occasion: {session.parsedIntent?.occasion || "N/A"}{" "}
-              {getOccasionEmoji(session.parsedIntent?.occasion)}
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-8 pb-20">
+        {/* Welcome Banner & Session Summary */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* Welcome Banner */}
+          <Card className="lg:col-span-2 border-0 bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-xl">
+            <CardContent className="p-8">
+              <div className="flex items-center gap-3 mb-3">
+                <ShoppingBag className="w-8 h-8" />
+                <h2 className="text-3xl font-bold">Welcome back!</h2>
+              </div>
+              <p className="text-lg text-white/90">
+                We've curated these perfect recommendations just for your {session.parsedIntent?.occasion || "occasion"}.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Session Summary Card */}
+          <Card className="shadow-lg border-slate-200">
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Tag className="w-5 h-5" />
+                Session Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Occasion:</span>
+                  <Badge variant="secondary" className="gap-1">
+                    {getOccasionEmoji(session.parsedIntent?.occasion)}
+                    {session.parsedIntent?.occasion || "N/A"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Style:</span>
+                  <Badge variant="secondary" className="gap-1">
+                    {getStyleEmoji(session.parsedIntent?.style)}
+                    {session.parsedIntent?.style || "N/A"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Season:</span>
+                  <Badge variant="secondary" className="gap-1">
+                    ☀️ {session.parsedIntent?.season || "N/A"}
+                  </Badge>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600">Budget:</span>
+                  <Badge variant="secondary" className="gap-1">
+                    💰 ${session.parsedIntent?.budget || 0}
+                  </Badge>
+                </div>
+              </div>
+              
+              {/* Tags */}
+              {session.tags && session.tags.length > 0 && (
+                <div className="pt-3 border-t border-slate-200">
+                  <p className="text-xs text-slate-500 mb-2">Preferences</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {session.tags.map((tag, index) => (
+                      <Badge 
+                        key={index}
+                        variant="outline"
+                        className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                      >
+                        {tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Recommendations Section */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-3xl font-bold text-slate-900">Recommended For You</h2>
+            <p className="text-slate-600">
+              {session.recommendations?.length || 0} perfect matches
             </p>
-            <p>
-              Style: {session.parsedIntent?.style || "N/A"}{" "}
-              {getStyleEmoji(session.parsedIntent?.style)}
-            </p>
-            <p>Season: {session.parsedIntent?.season || "N/A"} ☀️</p>
-            <p>Budget: ${session.parsedIntent?.budget || 0} 💰</p>
           </div>
-          <div className="flex flex-wrap gap-2 mt-3">
-            {session.tags?.map((tag, index) => (
-              <span
-                key={index}
-                className="inline-flex items-center px-2 sm:px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-xs sm:text-sm font-medium"
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {session.recommendations?.map((product, index) => (
+              <motion.div
+                key={product.productId}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
               >
-                {tag}
-              </span>
+                <ProductCard product={product} index={index} />
+              </motion.div>
             ))}
           </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="flex-1 px-4 sm:px-6 lg:px-10 pb-32 pt-4 overflow-y-auto">
-        <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-6 sm:mb-8">
-          Recommended For You
-        </h2>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
-          {session.recommendations?.map((product, index) => (
-            <ProductCard
-              key={product.productId}
-              product={product}
-              index={index}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Footer */}
-      <div className="fixed bottom-0 left-0 right-0 h-auto min-h-28 bg-white shadow-inner flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-0 px-4 sm:px-6 lg:px-10 py-4 sm:py-0">
-        <button
-          onClick={handleCallAssociate}
-          className="flex items-center justify-center gap-2 sm:gap-3 bg-green-600 text-white px-6 sm:px-8 lg:px-12 py-4 sm:py-5 lg:py-6 text-lg sm:text-xl lg:text-2xl font-semibold rounded-xl sm:rounded-2xl hover:bg-green-700 active:scale-95 transition flex-1 sm:flex-none"
-        >
-          <Bell className="w-5 h-5 sm:w-6 sm:h-6" />
-          <span className="hidden sm:inline">Call Associate</span>
-          <span className="sm:hidden">Call</span>
-        </button>
-        <button
-          onClick={handleStartOver}
-          className="flex items-center justify-center gap-2 sm:gap-3 bg-gray-600 text-white px-6 sm:px-8 lg:px-12 py-4 sm:py-5 lg:py-6 text-lg sm:text-xl lg:text-2xl font-semibold rounded-xl sm:rounded-2xl hover:bg-gray-700 active:scale-95 transition flex-1 sm:flex-none"
-        >
-          <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6" />
-          <span className="hidden sm:inline">Start Over</span>
-          <span className="sm:hidden">Reset</span>
-        </button>
       </div>
 
       {/* Confirm Dialog */}

@@ -1,5 +1,8 @@
 const express = require('express');
 const Session = require('../models/Session');
+const Cart = require('../models/Cart');
+const Wishlist = require('../models/Wishlist');
+const Product = require('../models/Product');
 const { parseUserMessage } = require('../services/contextEngine');
 const { getRecommendations } = require('../services/recommendationEngine');
 
@@ -67,11 +70,35 @@ router.post('/message', async (req, res) => {
     const existingTags = session.tags || [];
     session.tags = Array.from(new Set([...existingTags, ...newTags]));
 
+    // Detect cart/wishlist actions
+    const action = detectAction(message);
+    let actionResult = null;
+
     // Call recommendationEngine.getRecommendations(parsedIntent, 3)
     const recommendationsResult = await getRecommendations(parsedIntent, 3);
 
     // Add AI response to conversationHistory
-    const aiResponseText = parsed.summary || 'Got it. I will keep this in mind.';
+    let aiResponseText = parsed.summary || 'Got it. I will keep this in mind.';
+    
+    // Handle cart/wishlist actions
+    if (action.type === 'add_to_cart' && recommendationsResult.products.length > 0) {
+      const product = recommendationsResult.products[0];
+      actionResult = await addToCart(userId, sessionId, product.productId);
+      aiResponseText = `Great! I've added "${product.name}" to your cart. ${aiResponseText}`;
+    } else if (action.type === 'add_to_wishlist' && recommendationsResult.products.length > 0) {
+      const product = recommendationsResult.products[0];
+      actionResult = await addToWishlist(userId, sessionId, product.productId);
+      aiResponseText = `Perfect! I've added "${product.name}" to your wishlist. ${aiResponseText}`;
+    } else if (action.type === 'view_cart') {
+      actionResult = await getCart(userId, sessionId);
+      const itemCount = actionResult?.totalItems || 0;
+      aiResponseText = `You have ${itemCount} item${itemCount !== 1 ? 's' : ''} in your cart.`;
+    } else if (action.type === 'view_wishlist') {
+      actionResult = await getWishlist(userId, sessionId);
+      const itemCount = actionResult?.totalItems || 0;
+      aiResponseText = `You have ${itemCount} item${itemCount !== 1 ? 's' : ''} in your wishlist.`;
+    }
+
     session.conversationHistory.push({
       text: aiResponseText,
       sender: 'ai',
@@ -90,6 +117,7 @@ router.post('/message', async (req, res) => {
         parsedIntent: parsedIntent,
         tags: session.tags,
         recommendations: recommendationsResult.products || [],
+        action: action.type !== 'none' ? { type: action.type, result: actionResult } : null,
       },
     });
   } catch (error) {
@@ -193,5 +221,120 @@ router.delete('/session/:sessionId', async (req, res) => {
     });
   }
 });
+
+// Helper function to detect cart/wishlist actions
+function detectAction(message) {
+  const text = message.toLowerCase();
+  
+  if (text.match(/add (to|it to|this to)? ?(my )?cart/i)) {
+    return { type: 'add_to_cart' };
+  }
+  if (text.match(/add (to|it to|this to)? ?(my )?wishlist/i) || text.match(/save (it|this) for later/i)) {
+    return { type: 'add_to_wishlist' };
+  }
+  if (text.match(/show (my )?cart|view (my )?cart|what'?s in (my )?cart/i)) {
+    return { type: 'view_cart' };
+  }
+  if (text.match(/show (my )?wishlist|view (my )?wishlist|what'?s in (my )?wishlist/i)) {
+    return { type: 'view_wishlist' };
+  }
+  
+  return { type: 'none' };
+}
+
+// Helper function to add to cart
+async function addToCart(userId, sessionId, productId) {
+  try {
+    const product = await Product.findOne({ productId });
+    if (!product) return null;
+
+    let cart = await Cart.findOne({ userId, sessionId });
+    if (!cart) {
+      cart = new Cart({ userId, sessionId, items: [] });
+    }
+
+    const existingItem = cart.items.find(item => item.productId === productId);
+    if (existingItem) {
+      existingItem.quantity += 1;
+    } else {
+      cart.items.push({
+        productId: product.productId,
+        name: product.name,
+        price: product.price,
+        quantity: 1,
+        imageUrl: product.imageUrl,
+      });
+    }
+
+    await cart.save();
+    return cart;
+  } catch (error) {
+    console.error('Error adding to cart:', error);
+    return null;
+  }
+}
+
+// Helper function to add to wishlist
+async function addToWishlist(userId, sessionId, productId) {
+  try {
+    const product = await Product.findOne({ productId });
+    if (!product) return null;
+
+    let wishlist = await Wishlist.findOne({ userId, sessionId });
+    if (!wishlist) {
+      wishlist = new Wishlist({ userId, sessionId, items: [] });
+    }
+
+    const existingItem = wishlist.items.find(item => item.productId === productId);
+    if (existingItem) {
+      return wishlist; // Already in wishlist
+    }
+
+    wishlist.items.push({
+      productId: product.productId,
+      name: product.name,
+      price: product.price,
+      category: product.category,
+      imageUrl: product.imageUrl,
+      inStock: product.inStock,
+    });
+
+    await wishlist.save();
+    return wishlist;
+  } catch (error) {
+    console.error('Error adding to wishlist:', error);
+    return null;
+  }
+}
+
+// Helper function to get cart
+async function getCart(userId, sessionId) {
+  try {
+    let cart = await Cart.findOne({ userId, sessionId });
+    if (!cart) {
+      cart = new Cart({ userId, sessionId, items: [] });
+      await cart.save();
+    }
+    return cart;
+  } catch (error) {
+    console.error('Error getting cart:', error);
+    return null;
+  }
+}
+
+// Helper function to get wishlist
+async function getWishlist(userId, sessionId) {
+  try {
+    let wishlist = await Wishlist.findOne({ userId, sessionId });
+    if (!wishlist) {
+      wishlist = new Wishlist({ userId, sessionId, items: [] });
+      await wishlist.save();
+    }
+    return wishlist;
+  } catch (error) {
+    console.error('Error getting wishlist:', error);
+    return null;
+  }
+}
 
 module.exports = router;

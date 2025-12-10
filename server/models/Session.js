@@ -37,7 +37,6 @@ const sessionSchema = new mongoose.Schema(
     sessionId: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     userId: {
