@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { mockScanQR } from "../services/socket";
+import toast from "react-hot-toast";
 
 export default function QRScanner({ onClose, onScanSuccess }) {
   const [code, setCode] = useState("");
@@ -16,19 +16,45 @@ export default function QRScanner({ onClose, onScanSuccess }) {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!code.trim() || isValidating) return;
 
     setIsValidating(true);
 
-    // Mock scan
-    mockScanQR(code);
+    try {
+      // For demo: accept any code format
+      // Try to parse qrId:signature format first
+      let qrId, signature;
+      if (code.includes(':')) {
+        [qrId, signature] = code.split(':');
+      } else {
+        // For demo, use the code as both qrId and signature
+        qrId = code;
+        signature = code;
+      }
 
-    setTimeout(() => {
+      // Validate QR code with backend
+      const response = await fetch('http://localhost:5000/api/qr/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ qrId, signature }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        toast.success("Session loaded successfully!");
+        onScanSuccess(result.data);
+        onClose();
+      } else {
+        const error = await response.json();
+        toast.error(error.error || "Invalid or expired QR code");
+      }
+    } catch (error) {
+      console.error("QR validation error:", error);
+      toast.error("Failed to validate QR code");
+    } finally {
       setIsValidating(false);
-      onScanSuccess(code);
-      onClose();
-    }, 1000);
+    }
   };
 
   return (

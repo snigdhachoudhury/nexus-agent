@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Bell, RotateCcw, MapPin, Sparkles, ShoppingBag, Tag } from "lucide-react";
+import { Bell, RotateCcw, MapPin, Sparkles, ShoppingBag, Tag, MessageCircle, ShoppingCart, Heart } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import toast from "react-hot-toast";
 import ProductCard from "../components/ProductCard";
@@ -11,10 +11,16 @@ import { Badge } from "@/components/ui/badge";
 export default function ActiveMode({ session = mockSession, onStartOver }) {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [showTimeoutWarning, setShowTimeoutWarning] = useState(false);
+  const [showChatHistory, setShowChatHistory] = useState(false);
+  const [showCart, setShowCart] = useState(false);
   const [timeoutCountdown, setTimeoutCountdown] = useState(30);
   const lastInteractionRef = useRef(Date.now());
   const timeoutTimerRef = useRef(null);
   const warningTimerRef = useRef(null);
+
+  const hasConversationHistory = session?.conversationHistory && session.conversationHistory.length > 0;
+  const hasCart = session?.cart && session.cart.items && session.cart.items.length > 0;
+  const hasWishlist = session?.wishlist && session.wishlist.items && session.wishlist.items.length > 0;
 
   // Auto-timeout logic
   useEffect(() => {
@@ -128,6 +134,28 @@ export default function ActiveMode({ session = mockSession, onStartOver }) {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              {hasConversationHistory && (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => setShowChatHistory(true)}
+                  className="gap-2"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Chat History
+                </Button>
+              )}
+              {(hasCart || hasWishlist) && (
+                <Button 
+                  variant="outline" 
+                  size="lg"
+                  onClick={() => setShowCart(true)}
+                  className="gap-2"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  My Cart ({(session.cart?.totalItems || 0) + (session.wishlist?.totalItems || 0)})
+                </Button>
+              )}
               <Button 
                 variant="outline" 
                 size="lg"
@@ -246,6 +274,33 @@ export default function ActiveMode({ session = mockSession, onStartOver }) {
               </motion.div>
             ))}
           </div>
+
+          {/* Browse More Categories */}
+          <div className="mt-8 p-6 bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl border-2 border-blue-200">
+            <h3 className="text-xl font-bold text-slate-900 mb-4 text-center">
+              Looking for something else?
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: "Party Wear", icon: "🎉" },
+                { label: "Business", icon: "👔" },
+                { label: "Casual", icon: "👕" },
+                { label: "Sportswear", icon: "⚽" },
+              ].map((cat, idx) => (
+                <button
+                  key={idx}
+                  onClick={handleStartOver}
+                  className="bg-white rounded-lg p-4 text-center hover:shadow-lg hover:scale-105 transition-all duration-200 border border-blue-200"
+                >
+                  <div className="text-3xl mb-2">{cat.icon}</div>
+                  <div className="text-sm font-semibold text-slate-700">{cat.label}</div>
+                </button>
+              ))}
+            </div>
+            <p className="text-center text-sm text-slate-600 mt-4">
+              Click "Start Over" above to browse different categories
+            </p>
+          </div>
         </div>
       </div>
 
@@ -321,6 +376,148 @@ export default function ActiveMode({ session = mockSession, onStartOver }) {
                   }
                 }}
                 className="bg-blue-600 text-white font-semibold rounded-lg sm:rounded-xl py-3 sm:py-4 px-6 sm:px-8 text-base sm:text-lg lg:text-xl hover:bg-blue-700 transition"
+              >
+                Continue Shopping
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Chat History Modal */}
+      <AnimatePresence>
+        {showChatHistory && hasConversationHistory && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowChatHistory(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <MessageCircle className="w-6 h-6" />
+                  Your Conversation
+                </h3>
+                <button onClick={() => setShowChatHistory(false)} className="text-gray-500 hover:text-gray-700">
+                  ✕
+                </button>
+              </div>
+              <div className="space-y-3">
+                {session.conversationHistory.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-4 rounded-lg ${
+                      msg.sender === 'user'
+                        ? 'bg-blue-100 ml-8'
+                        : 'bg-gray-100 mr-8'
+                    }`}
+                  >
+                    <p className="text-sm font-semibold mb-1">
+                      {msg.sender === 'user' ? 'You' : 'NEXUS AI'}
+                    </p>
+                    <p className="text-gray-800">{msg.text}</p>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Cart/Wishlist Modal */}
+      <AnimatePresence>
+        {showCart && (hasCart || hasWishlist) && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowCart(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-2xl p-6 max-w-3xl w-full max-h-[80vh] overflow-y-auto shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                  <ShoppingCart className="w-6 h-6" />
+                  Your Cart & Wishlist
+                </h3>
+                <button onClick={() => setShowCart(false)} className="text-gray-500 hover:text-gray-700">
+                  ✕
+                </button>
+              </div>
+              
+              {hasCart && (
+                <div className="mb-6">
+                  <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <ShoppingCart className="w-5 h-5" />
+                    Shopping Cart ({session.cart.totalItems} items)
+                  </h4>
+                  <div className="space-y-2">
+                    {session.cart.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                        <img
+                          src={item.imageUrl || 'https://via.placeholder.com/60'}
+                          alt={item.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                        <div className="flex-1">
+                          <p className="font-semibold">{item.name}</p>
+                          <p className="text-sm text-gray-600">Qty: {item.quantity}</p>
+                        </div>
+                        <p className="font-bold text-blue-600">${item.price.toFixed(2)}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200 flex justify-between items-center">
+                    <span className="text-lg font-semibold">Total:</span>
+                    <span className="text-2xl font-bold text-blue-600">
+                      ${session.cart.totalPrice.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {hasWishlist && (
+                <div>
+                  <h4 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                    <Heart className="w-5 h-5" />
+                    Wishlist ({session.wishlist.totalItems} items)
+                  </h4>
+                  <div className="space-y-2">
+                    {session.wishlist.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center gap-4 p-3 bg-pink-50 rounded-lg">
+                        <img
+                          src={item.imageUrl || 'https://via.placeholder.com/60'}
+                          alt={item.name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                        <div className="flex-1">
+                          <p className="font-semibold">{item.name}</p>
+                          <p className="text-sm text-gray-600">{item.category}</p>
+                        </div>
+                        <p className="font-bold text-pink-600">${item.price.toFixed(2)}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowCart(false)}
+                className="mt-6 w-full bg-blue-600 text-white font-semibold rounded-lg py-3 hover:bg-blue-700 transition"
               >
                 Continue Shopping
               </button>
