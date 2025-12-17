@@ -18,7 +18,7 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [sessionId, setSessionId] = useState(null);
 
-  // Initialize session ID
+  // Initialize session ID and user ID
   useEffect(() => {
     let id = localStorage.getItem("nexus-session-id");
     if (!id) {
@@ -26,6 +26,13 @@ export default function ChatPage() {
       localStorage.setItem("nexus-session-id", id);
     }
     setSessionId(id);
+
+    // Initialize user ID if not exists
+    let userId = localStorage.getItem("nexus-user-id");
+    if (!userId) {
+      userId = `mobile-user-${uuidv4().substring(0, 8)}`;
+      localStorage.setItem("nexus-user-id", userId);
+    }
   }, []);
 
   // Listen for mock AI responses
@@ -130,15 +137,31 @@ export default function ChatPage() {
                 <ShoppingBag className="w-10 h-10 text-blue-600" />
               </div>
               <h2 className="text-2xl font-bold text-slate-900 mb-2">Welcome to NEXUS</h2>
-              <p className="text-slate-600 max-w-md">
+              <p className="text-slate-600 max-w-md mb-2">
                 Your AI-powered shopping assistant. Tell me what you're looking for and I'll help you find the perfect products.
               </p>
-              <div className="mt-6 flex flex-wrap gap-2 justify-center">
-                {["Wedding dress", "Casual outfit", "Formal wear"].map((suggestion) => (
+              <p className="text-sm text-slate-500 max-w-md">
+                Try these popular searches or ask me anything:
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2 justify-center max-w-2xl">
+                {[
+                  "Wedding dress",
+                  "Casual outfit",
+                  "Formal wear",
+                  "Business attire",
+                  "Party dress",
+                  "Summer collection",
+                  "Winter jackets",
+                  "Sportswear",
+                  "Date night outfit",
+                  "Budget-friendly options",
+                  "Premium suits",
+                  "Accessories"
+                ].map((suggestion) => (
                   <button
                     key={suggestion}
                     onClick={() => setInputText(suggestion)}
-                    className="px-4 py-2 rounded-full bg-white border border-slate-200 text-sm text-slate-700 hover:border-blue-300 hover:bg-blue-50 transition-all duration-200"
+                    className="px-4 py-2 rounded-full bg-white border border-slate-200 text-sm text-slate-700 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm transition-all duration-200"
                   >
                     {suggestion}
                   </button>
