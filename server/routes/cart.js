@@ -255,4 +255,48 @@ router.delete('/clear/:userId/:sessionId', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/cart/all
+ * Get all carts (for kiosk dashboard)
+ */
+router.get('/all', async (req, res) => {
+  try {
+    const carts = await Cart.find({ items: { $exists: true, $not: { $size: 0 } } })
+      .sort({ updatedAt: -1 })
+      .limit(50);
+
+    // Populate full product details for each item
+    const enrichedCarts = await Promise.all(
+      carts.map(async (cart) => {
+        const enrichedItems = await Promise.all(
+          cart.items.map(async (item) => {
+            const product = await Product.findOne({ productId: item.productId });
+            return {
+              ...item.toObject(),
+              category: product?.category,
+              aisle: product?.aisle,
+              inStock: product?.inStock,
+            };
+          })
+        );
+        return {
+          ...cart.toObject(),
+          items: enrichedItems,
+        };
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: enrichedCarts,
+    });
+  } catch (error) {
+    console.error('Error in GET /api/cart/all:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Internal server error',
+    });
+  }
+});
+
 module.exports = router;

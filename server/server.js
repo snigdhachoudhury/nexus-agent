@@ -8,6 +8,8 @@ const http = require('http');
 const { Server } = require('socket.io');
 const chatRoutes = require('./routes/chat');
 const qrRoutes = require('./routes/qr');
+const cartRoutes = require('./routes/cart');
+const wishlistRoutes = require('./routes/wishlist');
 const { initializeSocketManager } = require('./services/socketManager');
 
 // Load environment variables
@@ -126,6 +128,8 @@ app.get('/api/health', (req, res) => {
 // Mount routers
 app.use('/api/chat', chatRoutes);
 app.use('/api/qr', qrRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/wishlist', wishlistRoutes);
 
 // Socket.io initialization
 initializeSocketManager(io);

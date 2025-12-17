@@ -74,11 +74,18 @@ router.post('/message', async (req, res) => {
     const action = detectAction(message);
     let actionResult = null;
 
-    // Call recommendationEngine.getRecommendations(parsedIntent, 3)
-    const recommendationsResult = await getRecommendations(parsedIntent, 3);
+    // Call recommendationEngine.getRecommendations(parsedIntent, 8)
+    const recommendationsResult = await getRecommendations(parsedIntent, 8);
 
     // Add AI response to conversationHistory
     let aiResponseText = parsed.summary || 'Got it. I will keep this in mind.';
+    
+    // Enhance AI response with recommendations count
+    if (recommendationsResult.products.length > 0) {
+      const productCount = recommendationsResult.products.length;
+      const categories = [...new Set(recommendationsResult.products.map(p => p.category))];
+      aiResponseText = `${aiResponseText} I found ${productCount} great options across ${categories.length} categories for you. You can browse them below, ask me to show more, refine your search, or try commands like "add to cart" or "save to wishlist".`;
+    }
     
     // Handle cart/wishlist actions
     if (action.type === 'add_to_cart' && recommendationsResult.products.length > 0) {

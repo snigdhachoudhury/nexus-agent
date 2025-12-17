@@ -249,15 +249,16 @@ function applyCategoryDiversity(products, limit) {
   const selectedCategories = new Set();
   const result = [];
 
+  // First pass: prioritize products from different categories
   for (const product of products) {
     const category = product.category || 'Unknown';
     
     // Check if this category is already selected
     const isNewCategory = !selectedCategories.has(category);
     
-    // Apply diversity bonus (10 points) if category not yet included
-    if (isNewCategory && result.length < limit) {
-      product.score = (product.score || 0) + 10;
+    // Apply diversity bonus (15 points) if category not yet included
+    if (isNewCategory) {
+      product.score = (product.score || 0) + 15;
       selectedCategories.add(category);
     }
 

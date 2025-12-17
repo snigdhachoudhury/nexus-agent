@@ -194,4 +194,48 @@ router.delete('/clear/:userId/:sessionId', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/wishlist/all
+ * Get all wishlists (for kiosk dashboard)
+ */
+router.get('/all', async (req, res) => {
+  try {
+    const wishlists = await Wishlist.find({ items: { $exists: true, $not: { $size: 0 } } })
+      .sort({ updatedAt: -1 })
+      .limit(50);
+
+    // Populate full product details for each item
+    const enrichedWishlists = await Promise.all(
+      wishlists.map(async (wishlist) => {
+        const enrichedItems = await Promise.all(
+          wishlist.items.map(async (item) => {
+            const product = await Product.findOne({ productId: item.productId });
+            return {
+              ...item.toObject(),
+              category: product?.category,
+              aisle: product?.aisle,
+              inStock: product?.inStock,
+            };
+          })
+        );
+        return {
+          ...wishlist.toObject(),
+          items: enrichedItems,
+        };
+      })
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: enrichedWishlists,
+    });
+  } catch (error) {
+    console.error('Error in GET /api/wishlist/all:', error);
+    return res.status(500).json({
+      success: false,
+      error: error.message || 'Internal server error',
+    });
+  }
+});
+
 module.exports = router;
